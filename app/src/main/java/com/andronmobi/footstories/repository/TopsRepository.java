@@ -2,10 +2,8 @@ package com.andronmobi.footstories.repository;
 
 import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.MutableLiveData;
-import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 import com.andronmobi.footstories.AppExecutors;
 import com.andronmobi.footstories.api.ApiResponse;
@@ -28,24 +26,27 @@ public class TopsRepository {
 
     private static final String TAG = "TopsRepository";
 
+    private static TopsRepository sInstance;
+
     private final AppExecutors appExecutors;
-    private final LequipeWebservice lequipeWebservice;
+    private final LequipeWebservice webservice;
     private final FootDb footDb;
 
-    public TopsRepository(Context context, AppExecutors appExecutors /*, LequipeWebservice lequipeWebservice*/) {
+    public TopsRepository(FootDb database, AppExecutors appExecutors, LequipeWebservice webservice) {
         this.appExecutors = appExecutors;
+        this.footDb = database;
+        this.webservice = webservice;
+    }
 
-        footDb = FootDb.getInstance(context);
-
-        GsonBuilder b = new GsonBuilder().setExclusionStrategies(new FootExclusionStrategy());
-        Gson gson = b.create();
-
-        this.lequipeWebservice = new Retrofit.Builder()
-                .baseUrl("http://app.francefootball.fr/json/")
-                .addConverterFactory(GsonConverterFactory.create(gson))
-                .addCallAdapterFactory(new LiveDataCallAdapterFactory())
-                .build()
-                .create(LequipeWebservice.class);
+    public static TopsRepository getInstance(FootDb database, AppExecutors executors, LequipeWebservice webservice) {
+        if (sInstance == null) {
+            synchronized (TopsRepository.class) {
+                if (sInstance == null) {
+                    sInstance = new TopsRepository(database, executors, webservice);
+                }
+            }
+        }
+        return sInstance;
     }
 
     public LiveData<Resource<List<TopEntity>>> loadTops() {
@@ -89,7 +90,7 @@ public class TopsRepository {
             @NonNull
             @Override
             protected LiveData<ApiResponse<List<TopEntity>>> createCall() {
-                return lequipeWebservice.getTops();
+                return webservice.getTops();
             }
         }.asLiveData();
     }
