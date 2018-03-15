@@ -6,22 +6,26 @@ import android.arch.persistence.room.Insert;
 import android.arch.persistence.room.OnConflictStrategy;
 import android.arch.persistence.room.Query;
 
+import com.andronmobi.footstories.db.entity.StoryEntity;
 import com.andronmobi.footstories.db.entity.TopEntity;
 
 import java.util.List;
 
 @Dao
-public abstract class TopDao {
+public interface TopDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    public abstract void insert(TopEntity top);
+    void insert(TopEntity top);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    public abstract void insertAll(List<TopEntity> tops);
+    void insertAll(List<TopEntity> tops);
 
     @Query("SELECT * FROM tops WHERE id = :topId")
-    public abstract LiveData<TopEntity> loadTop(int topId);
+    LiveData<TopEntity> loadTop(int topId);
 
     @Query("SELECT * FROM tops")
-    public abstract LiveData<List<TopEntity>> loadAllTops();
+    LiveData<List<TopEntity>> loadAllTops();
+
+    @Query("SELECT * FROM tops")
+    List<TopEntity> loadAllTopsSync();
 }

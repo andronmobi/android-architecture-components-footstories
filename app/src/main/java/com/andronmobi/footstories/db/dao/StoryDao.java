@@ -29,10 +29,10 @@ import java.util.List;
 @Dao
 public interface StoryDao {
     @Query("SELECT * FROM stories where topType = :topType")
-    LiveData<List<StoryEntity>> loadStories(int topType);
+    LiveData<List<StoryEntity>> loadStories(String topType);
 
     @Query("SELECT * FROM stories where topType = :topType")
-    List<StoryEntity> loadStoriessSync(int topType);
+    List<StoryEntity> loadStoriessSync(String topType);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAll(List<StoryEntity> stories);

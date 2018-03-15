@@ -19,7 +19,6 @@ import com.andronmobi.footstories.util.LiveDataCallAdapterFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import retrofit2.Retrofit;
@@ -32,10 +31,6 @@ public class TopsRepository {
     private final AppExecutors appExecutors;
     private final LequipeWebservice lequipeWebservice;
     private final FootDb footDb;
-
-    // TODO delete them (workaround since there is no DB support yet)
-    private List<TopEntity> topList = new ArrayList<>(0);
-    private MutableLiveData<List<TopEntity>> topsFromDb = new MutableLiveData<>();
 
     public TopsRepository(Context context, AppExecutors appExecutors /*, LequipeWebservice lequipeWebservice*/) {
         this.appExecutors = appExecutors;
@@ -59,11 +54,9 @@ public class TopsRepository {
 
             @Override
             protected void saveCallResult(@NonNull List<TopEntity> tops) {
-                topList = tops; // TODO since there is no DB support yet, store it in the property
                 footDb.topDao().insertAll(tops);
                 for (TopEntity top : tops) {
-                    Log.d(TAG, "top title " + top.getTitle());
-                    Log.d(TAG, "top type " + top.getType());
+                    //Log.d(TAG, "------- write top title -------" + top.getTitle());
                     for (StoryEntity story : top.getStories()) {
                         story.setTopType(top.getType()); // TODO should be added to plus.json on the server
                     }
@@ -79,8 +72,18 @@ public class TopsRepository {
             @NonNull
             @Override
             protected LiveData<List<TopEntity>> loadFromDb() {
-                topsFromDb.setValue(topList);
-                return topsFromDb;
+                MutableLiveData<List<TopEntity>> data = new MutableLiveData();
+                appExecutors.diskIO().execute(() -> {
+                    // Load data from DB in IO thread
+                    List<TopEntity> tops = footDb.topDao().loadAllTopsSync();
+                    for (TopEntity top : tops) {
+                        //Log.d(TAG, "------- read top title -------" + top.getTitle());
+                        List<StoryEntity> stories = footDb.storyDao().loadStoriessSync(top.getType());
+                        top.setStories(stories);
+                    }
+                    data.postValue(tops);
+                });
+                return data;
             }
 
             @NonNull
